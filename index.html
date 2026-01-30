@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8" />
+<title>Mini Fortnite (bots)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #111;
+    overflow: hidden;
+    touch-action: none;
+    font-family: system-ui, sans-serif;
+    color: #fff;
+  }
+
+  #gameCanvas {
+    background: radial-gradient(circle at center, #2b3b4b 0, #111 70%);
+    display: block;
+    margin: 0 auto;
+  }
+
+  #ui {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* Virtuell joystick (venstre) */
+  #joystickArea {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 45vw;
+    height: 45vh;
+    pointer-events: auto;
+  }
+  #joystickBase, #joystickStick {
+    position: absolute;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.4;
+  }
+  #joystickBase {
+    width: 120px;
+    height: 120px;
+    background: #fff3;
+    border: 2px solid #fff5;
+    display: none;
+  }
+  #joystickStick {
+    width: 60px;
+    height: 60px;
+    background: #fff6;
+    display: none;
+  }
+
+  /* Skyt-knapp (høyre) */
+  #shootBtn {
+    position: absolute;
+    right: 5vw;
+    bottom: 10vh;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #f44a;
+    border: 2px solid #f88;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    user-select: none;
+  }
+
+  #info {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    font-size: 14px;
+  }
+
+  #gameOver {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: #000a;
+    font-size: 24px;
+    display: none;
+  }
+
+  button {
+    padding: 8px 16px;
+    margin-top: 10px;
+    border-radius: 6px;
+    border: none;
+    background: #3a8;
+    color: #fff;
+    font-size: 16px;
+  }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+
+<div id="ui">
+  <div id="info">HP: <span id="hpText">100</span> | Bots: <span id="botsText">0</span></div>
+
+  <div id="joystickArea">
+    <div id="joystickBase"></div>
+    <div id="joystickStick"></div>
+  </div>
+
+  <div id="shootBtn">SKYT</div>
+
+  <div id="gameOver">
+    <div id="gameOverText"></div>
+    <button id="restartBtn">Spill igjen</button>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const size = Math.min(w, h);
+    canvas.width = size;
+    canvas.height = size;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  const hpText = document.getElementById('hpText');
+  const botsText = document.getElementById('botsText');
+  const gameOverEl = document.getElementById('gameOver');
+  const gameOverText = document.getElementById('gameOverText');
+  const restartBtn = document.getElementById('restartBtn');
+
+  const joystickArea = document.getElementById('joystickArea');
+  const joystickBase = document.getElementById('joystickBase');
+  const joystickStick = document.getElementById('joystickStick');
+  const shootBtn = document.getElementById('shootBtn');
+
+  const W = () => canvas.width;
+  const H = () => canvas.height;
+
+  const player = {
+    x: 0,
+    y: 0,
+    r: 14,
+    speed: 2.2,
+    vx: 0,
+    vy: 0,
+    hp: 100,
+    aimAngle: 0
+  };
+
+  let bullets = [];
+  let bots = [];
+  let lastTime = 0;
+  let spawnTimer = 0;
+  let gameRunning = true;
+
+  function resetGame() {
+    player.x = W() / 2;
+    player.y = H() / 2;
+    player.hp = 100;
+    bullets = [];
+    bots = [];
+    spawnTimer = 0;
+    gameRunning = true;
+    gameOverEl.style.display = 'none';
+  }
+  resetGame();
+
+  function spawnBot() {
+    const edge = Math.floor(Math.random() * 4);
+    let x, y;
+    const margin = 20;
+    if (edge === 0) { x = margin; y = Math.random() * H(); }
+    else if (edge === 1) { x = W() - margin; y = Math.random() * H(); }
+    else if (edge === 2) { x = Math.random() * W(); y = margin; }
+    else { x = Math.random() * W(); y = H() - margin; }
+
+    bots.push({
+      x, y,
+      r: 12,
+      speed: 1.4 + Math.random() * 0.4,
+      hp: 30
+    });
+  }
+
+  function shootBullet() {
+    const speed = 5;
+    bullets.push({
+      x: player.x,
+      y: player.y,
+      r: 4,
+      vx: Math.cos(player.aimAngle) * speed,
+      vy: Math.sin(player.aimAngle) * speed,
+      life: 120
+    });
+  }
+
+  let shootPressed = false;
+  let shootCooldown = 0;
+
+  shootBtn.addEventListener('touchstart', e => {
+    e.preventDefault();
+    shootPressed = true;
+  });
+  shootBtn.addEventListener('touchend', e => {
+    e.preventDefault();
+    shootPressed = false;
+  });
+  shootBtn.addEventListener('mousedown', e => {
+    e.preventDefault();
+    shootPressed = true;
+  });
+  shootBtn.addEventListener('mouseup', e => {
+    e.preventDefault();
+    shootPressed = false;
+  });
+
+  let joystickActive = false;
+  let joystickCenter = { x: 0, y: 0 };
+  let joystickVector = { x: 0, y: 0 };
+
+  function startJoystick(x, y) {
+    joystickActive = true;
+    joystickCenter.x = x;
+    joystickCenter.y = y;
+    joystickVector.x = 0;
+    joystickVector.y = 0;
+    joystickBase.style.left = x + 'px';
+    joystickBase.style.top = y + 'px';
+    joystickStick.style.left = x + 'px';
+    joystickStick.style.top = y + 'px';
+    joystickBase.style.display = 'block';
+    joystickStick.style.display = 'block';
+  }
+
+  function moveJoystick(x, y) {
+    if (!joystickActive) return;
+    const dx = x - joystickCenter.x;
+    const dy = y - joystickCenter.y;
+    const dist = Math.hypot(dx, dy);
+    const maxDist = 50;
+    let nx = dx, ny = dy;
+    if (dist > maxDist) {
+      nx = dx / dist * maxDist;
+      ny = dy / dist * maxDist;
+    }
+    joystickStick.style.left = (joystickCenter.x + nx) + 'px';
+    joystickStick.style.top = (joystickCenter.y + ny) + 'px';
+
+    joystickVector.x = nx / maxDist;
+    joystickVector.y = ny / maxDist;
+
+    if (dist > 5) {
+      player.aimAngle = Math.atan2(joystickVector.y, joystickVector.x);
+    }
+  }
+
+  function endJoystick() {
+    joystickActive = false;
+    joystickVector.x = 0;
+    joystickVector.y = 0;
+    joystickBase.style.display = 'none';
+    joystickStick.style.display = 'none';
+  }
+
+  joystickArea.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const t = e.touches[0];
+    startJoystick(t.clientX, t.clientY);
+  });
+  joystickArea.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const t = e.touches[0];
+    moveJoystick(t.clientX, t.clientY);
+  });
+  joystickArea.addEventListener('touchend', e => {
+    e.preventDefault();
+    if (e.touches.length === 0) endJoystick();
+  });
+
+  joystickArea.addEventListener('mousedown', e => {
+    e.preventDefault();
+    startJoystick(e.clientX, e.clientY);
+  });
+  window.addEventListener('mousemove', e => {
+    if (!joystickActive) return;
+    moveJoystick(e.clientX, e.clientY);
+  });
+  window.addEventListener('mouseup', e => {
+    if (joystickActive) endJoystick();
+  });
+
+  restartBtn.addEventListener('click', () => {
+    resetGame();
+  });
+
+  function update(dt) {
+    if (!gameRunning) return;
+
+    player.vx = joystickVector.x * player.speed * (dt / 16.67);
+    player.vy = joystickVector.y * player.speed * (dt / 16.67);
+
+    player.x += player.vx;
+    player.y += player.vy;
+    player.x = Math.max(player.r, Math.min(W() - player.r, player.x));
+    player.y = Math.max(player.r, Math.min(H() - player.r, player.y));
+
+    spawnTimer += dt;
+    if (spawnTimer > 1500) {
+      spawnTimer = 0;
+      spawnBot();
+    }
+
+    for (const bot of bots) {
+      const dx = player.x - bot.x;
+      const dy = player.y - bot.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const speed = bot.speed * (dt / 16.67);
+      bot.x += (dx / dist) * speed;
+      bot.y += (dy / dist) * speed;
+
+      if (dist < bot.r + player.r) {
+        player.hp -= 10 * (dt / 1000);
+        if (player.hp <= 0) {
+          player.hp = 0;
+          gameOver(false);
+        }
+      }
+    }
+
+    for (const b of bullets) {
+      b.x += b.vx * (dt / 16.67);
+      b.y += b.vy * (dt / 16.67);
+      b.life -= dt;
+    }
+    bullets = bullets.filter(b => b.life > 0 && b.x > -10 && b.x < W() + 10 && b.y > -10 && b.y < H() + 10);
+
+    for (const b of bullets) {
+      for (const bot of bots) {
+        const dx = b.x - bot.x;
+        const dy = b.y - bot.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < b.r + bot.r) {
+          bot.hp -= 20;
+          b.life = 0;
+        }
+      }
+    }
+    bots = bots.filter(bot => bot.hp > 0);
+
+    shootCooldown -= dt;
+    if (shootCooldown < 0) shootCooldown = 0;
+    if (shootPressed && shootCooldown === 0) {
+      shootBullet();
+      shootCooldown = 250;
+    }
+
+    hpText.textContent = Math.max(0, player.hp).toFixed(0);
+    botsText.textContent = bots.length;
+  }
+
+  function gameOver(win) {
+    gameRunning = false;
+    gameOverText.textContent = win ? 'Du vant!' : 'Du døde!';
+    gameOverEl.style.display = 'flex';
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W(), H());
+
+    ctx.save();
+    ctx.strokeStyle = '#3c5';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(10, 10, W() - 20, H() - 20);
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    ctx.rotate(player.aimAngle);
+    ctx.fillStyle = '#4cf';
+    ctx.beginPath();
+    ctx.arc(0, 0, player.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(player.r - 4, -3, 10, 6);
+    ctx.restore();
+
+    ctx.fillStyle = '#f55';
+    for (const bot of bots) {
+      ctx.beginPath();
+      ctx.arc(bot.x, bot.y, bot.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = '#fffb';
+    for (const b of bullets) {
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function loop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    const dt = timestamp - lastTime;
+    lastTime = timestamp;
+
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+</script>
+</body>
+</html>
