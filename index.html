@@ -348,6 +348,9 @@ let hiScore = 0;
 let totalBotsSpawned = 0;
 const MAX_BOTS_TOTAL = 50;
 
+// Dobbel-tap på reset
+let lastResetTap = 0;
+
 const weaponTypes = [
   { name: "Rifle", dmg: 20, color: "#4cf", fireRate: 220, bulletSpeed: 7 },
   { name: "Shotgun", dmg: 45, color: "#fa4", fireRate: 600, bulletSpeed: 6, spread: 0.3, pellets: 5 },
@@ -493,7 +496,8 @@ function spawnBot() {
     hp: 60,
     wanderTimer: 0,
     vx: 0,
-    vy: 0
+    vy: 0,
+    killedByPlayer: false
   });
 
   totalBotsSpawned++;
@@ -610,9 +614,21 @@ rightArrow.addEventListener("click", () => {
   updateWeaponText();
 });
 
-// Reset-knapp
+// Reset-knapp med dobbel-tap for hi-score reset
 resetBtn.addEventListener("click", () => {
-  player.hp = 0;
+  const now = Date.now();
+
+  if (now - lastResetTap < 300) {
+    if (confirm("Er du sikker på at du vil resette HI‑score?")) {
+      localStorage.setItem("mw_hiscore", "0");
+      hiScore = 0;
+      hiScoreText.textContent = "0";
+    }
+  } else {
+    player.hp = 0;
+  }
+
+  lastResetTap = now;
 });
 
 // Joystick
@@ -786,20 +802,20 @@ function update(dt) {
     if (dist > stormRadius) {
       player.hp -= 8 * (dt / 1000);
     }
-  }
-  // Bots tar stormskade KUN når stormen er full
-if (stormElapsed >= stormShrinkTime) {
-  for (const bot of bots) {
-    const bdx = bot.x - stormCenter.x;
-    const bdy = bot.y - stormCenter.y;
-    const bdist = Math.hypot(bdx, bdy);
 
-    if (bdist > stormRadius) {
-      bot.hp -= 5 * (dt / 1000); // 5 damage per sekund
+    // Bots tar stormskade KUN når stormen er full
+    if (stormElapsed >= stormShrinkTime) {
+      for (const bot of bots) {
+        const bdx = bot.x - stormCenter.x;
+        const bdy = bot.y - stormCenter.y;
+        const bdist = Math.hypot(bdx, bdy);
+
+        if (bdist > stormRadius) {
+          bot.hp -= 5 * (dt / 1000); // 5 damage per sekund
+        }
+      }
     }
   }
-}
-
 
   // Bot-spawn (maks 50 totalt)
   spawnTimer += dt;
@@ -874,28 +890,28 @@ if (stormElapsed >= stormShrinkTime) {
       const dy = b.y - bot.y;
       const dist = Math.hypot(dx, dy);
       if (dist < b.r + bot.r) {
-  bot.hp -= b.dmg;
-  bot.killedByPlayer = true; // markér at spilleren har skadet boten
-  b.life = 0;
-}
-
-
-  // Kill‑teller + hi‑score (kun hvis spilleren drepte boten)
-for (const bot of bots) {
-  if (bot.hp <= 0) {
-    if (bot.killedByPlayer) {
-      kills++;
-      killText.textContent = kills;
-      if (kills > hiScore) {
-        hiScore = kills;
-        hiScoreText.textContent = hiScore;
-        localStorage.setItem("mw_hiscore", hiScore);
+        bot.hp -= b.dmg;
+        bot.killedByPlayer = true; // markér at spilleren har skadet boten
+        b.life = 0;
       }
     }
   }
-}
-bots = bots.filter(bot => bot.hp > 0);
 
+  // Kill‑teller + hi‑score (kun hvis spilleren drepte boten)
+  for (const bot of bots) {
+    if (bot.hp <= 0) {
+      if (bot.killedByPlayer) {
+        kills++;
+        killText.textContent = kills;
+        if (kills > hiScore) {
+          hiScore = kills;
+          hiScoreText.textContent = hiScore;
+          localStorage.setItem("mw_hiscore", hiScore);
+        }
+      }
+    }
+  }
+  bots = bots.filter(bot => bot.hp > 0);
 
   // Plukk opp våpen
   for (let i = weapons.length - 1; i >= 0; i--) {
