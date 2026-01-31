@@ -22,15 +22,10 @@
   }
 
   #ui {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-}
-
-#gameOver {
-  pointer-events: auto;
-}
-
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+  }
 
   #topBar {
     position: absolute;
@@ -159,6 +154,8 @@
     flex-direction: column;
     background: #000b;
     font-size: 24px;
+    pointer-events: auto;
+    z-index: 9999;
   }
 
   button {
@@ -179,7 +176,9 @@
   <div id="topBar">
     HP: <span id="hpText">100</span> |
     Bots: <span id="botsText">0</span> |
-    Storm: <span id="stormText">Rolig</span><br/>
+    Storm: <span id="stormText">Rolig</span> |
+    Kills: <span id="killText">0</span> |
+    Hi‑Score: <span id="hiScoreText">0</span><br/>
     Våpen: <span id="weaponText">Ingen</span>
     <div id="stormBar">
       <div id="stormBarFill"></div>
@@ -224,6 +223,8 @@
   const gameOverEl = document.getElementById('gameOver');
   const gameOverText = document.getElementById('gameOverText');
   const restartBtn = document.getElementById('restartBtn');
+  const killText = document.getElementById('killText');
+  const hiScoreText = document.getElementById('hiScoreText');
 
   const joystickArea = document.getElementById('joystickArea');
   const joystickBase = document.getElementById('joystickBase');
@@ -275,6 +276,10 @@
   let stormElapsed = 0;
   let stormActive = true;
 
+  // Kills / hi-score
+  let kills = 0;
+  let hiScore = 0;
+
   const weaponTypes = [
     { name: "Rifle", dmg: 20, color: "#4cf", fireRate: 220, bulletSpeed: 7 },
     { name: "Shotgun", dmg: 45, color: "#fa4", fireRate: 600, bulletSpeed: 6, spread: 0.3, pellets: 5 },
@@ -307,6 +312,7 @@
       slot.addEventListener("click", () => {
         player.activeSlot = i;
         updateToolbar();
+        updateWeaponText();
       });
       toolbarEl.appendChild(slot);
     }
@@ -323,6 +329,11 @@
   }
 
   function resetGame() {
+    hiScore = parseInt(localStorage.getItem("mw_hiscore") || "0");
+    kills = 0;
+    killText.textContent = kills;
+    hiScoreText.textContent = hiScore;
+
     player.x = world.width / 2;
     player.y = world.height / 2;
     player.vx = 0;
@@ -345,9 +356,13 @@
     stormActive = true;
     gameRunning = true;
     gameOverEl.style.display = 'none';
+    lastTime = 0;
+    shootPressed = false;
+    jumpPressed = false;
     initBlocks();
     initBots();
     initToolbar();
+    updateToolbar();
     updateWeaponText();
   }
 
@@ -579,7 +594,7 @@
 
   function gameOver(win) {
     gameRunning = false;
-    gameOverText.textContent = win ? 'Du vant!' : 'Du døde!';
+    gameOverText.textContent = win ? 'Victory Royale!' : 'Du døde!';
     gameOverEl.style.display = 'flex';
   }
 
@@ -657,16 +672,16 @@
       }
     }
 
-    // Bot-spawn
+    // Bot-spawn (maks 50)
     spawnTimer += dt;
-    if (spawnTimer > 4000 && bots.length < 25) {
+    if (spawnTimer > 4000 && bots.length < 50) {
       spawnTimer = 0;
       spawnBot();
     }
 
-    // Våpen-spawn
+    // Våpen-spawn (litt hyppigere + flere)
     weaponSpawnTimer += dt;
-    if (weaponSpawnTimer > 3500 && weapons.length < 20) {
+    if (weaponSpawnTimer > 1500 && weapons.length < 30) {
       weaponSpawnTimer = 0;
       spawnWeapon();
     }
@@ -723,7 +738,7 @@
       b.y > -50 && b.y < world.height + 50
     );
 
-    // Bullet vs bots
+    // Bullet vs bots + kills / hi-score
     for (const b of bullets) {
       for (const bot of bots) {
         const dx = b.x - bot.x;
@@ -732,6 +747,18 @@
         if (dist < b.r + bot.r) {
           bot.hp -= b.dmg;
           b.life = 0;
+        }
+      }
+    }
+
+    for (const bot of bots) {
+      if (bot.hp <= 0) {
+        kills++;
+        killText.textContent = kills;
+        if (kills > hiScore) {
+          hiScore = kills;
+          hiScoreText.textContent = hiScore;
+          localStorage.setItem("mw_hiscore", hiScore);
         }
       }
     }
@@ -767,6 +794,8 @@
       player.hp = 0;
       gameOver(false);
     }
+
+    // Victory Royale når alle bots er døde
     if (bots.length === 0 && gameRunning) {
       gameOver(true);
     }
