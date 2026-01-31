@@ -874,15 +874,16 @@ if (stormElapsed >= stormShrinkTime) {
       const dy = b.y - bot.y;
       const dist = Math.hypot(dx, dy);
       if (dist < b.r + bot.r) {
-        bot.hp -= b.dmg;
-        b.life = 0;
-      }
-    }
-  }
+  bot.hp -= b.dmg;
+  bot.killedByPlayer = true; // markér at spilleren har skadet boten
+  b.life = 0;
+}
 
-  // Kill‑teller + hi‑score
-  for (const bot of bots) {
-    if (bot.hp <= 0) {
+
+  // Kill‑teller + hi‑score (kun hvis spilleren drepte boten)
+for (const bot of bots) {
+  if (bot.hp <= 0) {
+    if (bot.killedByPlayer) {
       kills++;
       killText.textContent = kills;
       if (kills > hiScore) {
@@ -892,7 +893,9 @@ if (stormElapsed >= stormShrinkTime) {
       }
     }
   }
-  bots = bots.filter(bot => bot.hp > 0);
+}
+bots = bots.filter(bot => bot.hp > 0);
+
 
   // Plukk opp våpen
   for (let i = weapons.length - 1; i >= 0; i--) {
