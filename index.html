@@ -108,12 +108,13 @@
   }
 
   #leftArrow {
-    left: calc(50% - 150px);
-  }
+  left: calc(50% - 220px);
+}
 
-  #rightArrow {
-    right: calc(50% - 150px);
-  }
+#rightArrow {
+  right: calc(50% - 220px);
+}
+
 
   .arrowBtn:active {
     background: #222;
@@ -198,6 +199,29 @@
     color: #fff;
     font-size: 16px;
   }
+
+  #resetBtn {
+  position: absolute;
+  left: 15px;
+  bottom: 15px;
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  background: #c33c;
+  border: 2px solid #f55;
+  color: #fff;
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  user-select: none;
+}
+
+#resetBtn:active {
+  background: #f55;
+}
+
 </style>
 </head>
 <body>
@@ -205,6 +229,7 @@
 
 <div id="ui">
   <div id="topBar">
+    <div id="resetBtn">X</div>
     HP: <span id="hpText">100</span> |
     Bots: <span id="botsText">0</span> |
     Storm: <span id="stormText">Rolig</span> |
@@ -571,6 +596,11 @@
     updateWeaponText();
   });
 
+  document.getElementById("resetBtn").addEventListener("click", () => {
+  player.hp = 0; // instant death
+});
+
+
   // Joystick
   function startJoystick(x, y) {
     joystickActive = true;
@@ -743,7 +773,7 @@
 
     // Bot-spawn (maks 50)
     spawnTimer += dt;
-    if (spawnTimer > 4000 && bots.length < 50) {
+    if (spawnTimer > 4000 && bots.length < 35) {
       spawnTimer = 0;
       spawnBot();
     }
