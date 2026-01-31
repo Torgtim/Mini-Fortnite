@@ -3,588 +3,356 @@
 <head>
 <meta charset="UTF-8" />
 <title>Mini Fortnite Lite</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <style>
   html, body {
-    margin: 0;
-    padding: 0;
+    margin: 0; padding: 0;
     background: #05070b;
     overflow: hidden;
     touch-action: none;
     font-family: system-ui, sans-serif;
     color: #fff;
   }
-
-  #gameCanvas {
-    display: block;
-    margin: 0 auto;
-    background: radial-gradient(circle at center, #1f2b3a 0, #05070b 70%);
-  }
-
-  #ui {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-  }
-
+  #gameCanvas { display: block; background: #10151c; }
+  #ui { position: fixed; inset: 0; pointer-events: none; }
   #topBar {
-    position: absolute;
-    left: 10px;
-    top: 10px;
-    font-size: 13px;
-    background: #0008;
-    padding: 6px 10px;
-    border-radius: 8px;
+    position: absolute; left: 10px; top: 10px;
+    font-size: 13px; background: #0008;
+    padding: 6px 10px; border-radius: 8px;
   }
-
-  #stormBar {
-    margin-top: 4px;
-    width: 140px;
-    height: 6px;
-    background: #333;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  #stormBarFill {
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, #4cf, #f4f);
-  }
-
-  /* Toolbar */
+  #stormBar { margin-top: 4px; width: 140px; height: 6px; background: #333; border-radius: 4px; overflow: hidden; }
+  #stormBarFill { width: 100%; height: 100%; background: linear-gradient(90deg, #4cf, #f4f); }
+  
   #toolbar {
-    position: absolute;
-    left: 50%;
-    bottom: 10px;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 6px;
-    pointer-events: auto;
+    position: absolute; left: 50%; bottom: 10px;
+    transform: translateX(-50%); display: flex; gap: 6px; pointer-events: auto;
   }
   .slot {
-    width: 52px;
-    height: 52px;
-    border-radius: 8px;
-    border: 2px solid #999;
-    background: #0009;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    position: relative;
-    color: #eee;
+    width: 50px; height: 50px; border-radius: 8px;
+    border: 2px solid #555; background: #0009;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #eee; position: relative;
   }
-  .slot.active {
-    border-color: #ffd54f;
-    box-shadow: 0 0 8px #ffd54f;
-  }
-  .slot span {
-    text-align: center;
-  }
-  .slotIndex {
-    position: absolute;
-    left: 4px;
-    bottom: 2px;
-    font-size: 9px;
-    opacity: 0.7;
-  }
-
-  /* Piler for å bytte våpen */
+  .slot.active { border-color: #ffd54f; box-shadow: 0 0 8px #ffd54f; }
+  
   .arrowBtn {
-    position: absolute;
-    bottom: 25px;
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    background: #0008;
-    border: 2px solid #888;
-    color: #fff;
-    font-size: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: auto;
-    user-select: none;
-    z-index: 99999;
+    position: absolute; bottom: 20px; width: 50px; height: 50px;
+    border-radius: 50%; background: #fff2; border: 2px solid #fff5;
+    color: #fff; font-size: 24px; display: flex; align-items: center;
+    justify-content: center; pointer-events: auto; z-index: 10;
   }
-
-  #leftArrow {
-    left: calc(50% - 220px);
-  }
-
-  #rightArrow {
-    right: calc(50% - 220px);
-  }
-
-  .arrowBtn:active {
-    background: #222;
-    border-color: #fff;
-  }
-
-  /* Reset-knapp */
+  #leftArrow { left: 20px; }
+  #rightArrow { right: 20px; }
   #resetBtn {
-    position: absolute;
-    left: 15px;
-    bottom: 15px;
-    width: 55px;
-    height: 55px;
-    border-radius: 50%;
-    background: #c33c;
-    border: 2px solid #f55;
-    color: #fff;
-    font-size: 26px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: auto;
-    user-select: none;
-    z-index: 99999;
+    position: absolute; left: 15px; bottom: 80px; width: 40px; height: 40px;
+    border-radius: 50%; background: #f448; border: 1px solid #f44;
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    pointer-events: auto; z-index: 10;
   }
 
-  #resetBtn:active {
-    background: #f55;
-  }
+  #joystickArea { position: absolute; left: 0; bottom: 0; width: 50vw; height: 50vh; pointer-events: auto; }
+  #joystickBase { position: absolute; width: 100px; height: 100px; background: #fff2; border: 2px solid #fff3; border-radius: 50%; display: none; transform: translate(-50%, -50%); }
+  #joystickStick { position: absolute; width: 50px; height: 50px; background: #fff5; border-radius: 50%; display: none; transform: translate(-50%, -50%); }
 
-  /* Virtuell joystick (venstre) */
-  #joystickArea {
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 45vw;
-    height: 45vh;
-    pointer-events: auto;
-  }
-  #joystickBase, #joystickStick {
-    position: absolute;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    opacity: 0.4;
-  }
-  #joystickBase {
-    width: 120px;
-    height: 120px;
-    background: #fff3;
-    border: 2px solid #fff5;
-    display: none;
-  }
-  #joystickStick {
-    width: 60px;
-    height: 60px;
-    background: #fff6;
-    display: none;
-  }
-
-  /* Skyt-knapp (høyre) + hopp */
-  #shootBtn, #jumpBtn {
-    position: absolute;
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    pointer-events: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    user-select: none;
-    font-size: 13px;
-  }
-  #shootBtn {
-    right: 5vw;
-    bottom: 12vh;
-    background: #f44a;
-    border: 2px solid #f88;
-  }
-  #jumpBtn {
-    right: 20vw;
-    bottom: 22vh;
-    background: #4af8;
-    border: 2px solid #8ff;
-  }
-
+  #shootBtn { position: absolute; right: 30px; bottom: 100px; width: 80px; height: 80px; background: #f44a; border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: auto; }
+  
   #gameOver {
-    position: absolute;
-    inset: 0;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    background: #000b;
-    font-size: 24px;
-    pointer-events: auto;
-    z-index: 9999;
-  }
-
-  button {
-    padding: 8px 16px;
-    margin-top: 10px;
-    border-radius: 6px;
-    border: none;
-    background: #3a8;
-    color: #fff;
-    font-size: 16px;
+    position: absolute; inset: 0; display: none;
+    align-items: center; justify-content: center; flex-direction: column;
+    background: #000d; z-index: 100; pointer-events: auto;
   }
 </style>
 </head>
 <body>
 <canvas id="gameCanvas"></canvas>
-
 <div id="ui">
   <div id="topBar">
-    HP: <span id="hpText">100</span> |
-    Bots: <span id="botsText">0</span> |
-    Storm: <span id="stormText">Rolig</span> |
-    Kills: <span id="killText">0</span> |
-    Hi‑Score: <span id="hiScoreText">0</span><br/>
-    Våpen: <span id="weaponText">Ingen</span>
-    <div id="stormBar">
-      <div id="stormBarFill"></div>
-    </div>
+    HP: <span id="hpText">100</span> | Bots: <span id="botsText">0</span> | Storm: <span id="stormText">Venter</span><br>
+    Kills: <span id="killText">0</span> | Hi: <span id="hiScoreText">0</span>
+    <div id="stormBar"><div id="stormBarFill"></div></div>
   </div>
-
   <div id="toolbar"></div>
   <div id="leftArrow" class="arrowBtn">◀</div>
   <div id="rightArrow" class="arrowBtn">▶</div>
-
+  <div id="resetBtn">X</div>
   <div id="joystickArea">
     <div id="joystickBase"></div>
     <div id="joystickStick"></div>
   </div>
-
   <div id="shootBtn">SKYT</div>
-  <div id="jumpBtn">HOPP</div>
-
   <div id="gameOver">
-    <div id="gameOverText"></div>
-    <button id="restartBtn">Spill igjen</button>
+    <h1 id="gameOverTitle">GAME OVER</h1>
+    <button id="restartBtn">Prøv igjen</button>
   </div>
-
-  <div id="resetBtn">X</div>
 </div>
 
 <script>
-/*  
-  Hele JavaScript‑delen er identisk med forrige versjon,
-  men med følgende tillegg:
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const W = () => canvas.width = window.innerWidth;
+const H = () => canvas.height = window.innerHeight;
+W(); H();
 
-  – Reset‑knapp: player.hp = 0
-  – Piler har høy z-index
-  – Reset‑knapp flyttet nederst i UI
-  – spawnBot() og spawnWeapon() bruker safeRandomPosition()
-  – Ingen endringer i spill‑logikk ellers
-*/
+// Spill-innstillinger
+const world = { width: 2500, height: 2500 };
+const MAX_BOTS_TOTAL = 30;
+let gameRunning = true;
+let lastTime = 0;
+let kills = 0;
+let hiScore = localStorage.getItem("mw_hiscore") || 0;
+document.getElementById('hiScoreText').textContent = hiScore;
 
-//(HER KOMMER HELE JS‑KODEN DIN, IDENTISK MED FORRIGE VERSJON) …
+const weaponTypes = {
+  pistol: { name: "Pistol", color: "#aaa", dmg: 15, fireRate: 400, r: 4 },
+  smg: { name: "SMG", color: "#4f4", dmg: 10, fireRate: 150, r: 3 },
+  sniper: { name: "Sniper", color: "#f4f", dmg: 80, fireRate: 1200, r: 6 }
+};
 
+let player, bots, bullets, weapons, blocks, inventory, activeSlot;
+let stormActive = false, stormRadius = 2000, stormElapsed = 0, stormShrinkTime = 60000;
+const stormCenter = { x: world.width/2, y: world.height/2 };
+
+function resetGame() {
+  player = { x: world.width/2, y: world.height/2, z: 0, vz: 0, r: 15, hp: 100, speed: 4, vx: 0, vy: 0, aimAngle: 0, onGround: true, gravity: 0.5, jumpStrength: 8 };
+  bots = []; bullets = []; weapons = []; blocks = [];
+  inventory = ["pistol"]; activeSlot = 0;
+  kills = 0;
+  stormActive = false;
+  stormRadius = 2000;
+  stormElapsed = 0;
+  totalBotsSpawned = 0;
+  gameRunning = true;
+  document.getElementById('gameOver').style.display = 'none';
+  
+  // Lag noen vegger/blokker
+  for(let i=0; i<15; i++) {
+    blocks.push({ x: Math.random()*world.width, y: Math.random()*world.height, w: 100, h: 100 });
+  }
+  updateToolbar();
+}
+
+// Input håndtering
+const keys = {};
+let joystickVector = { x: 0, y: 0 };
+let shootPressed = false;
+
+window.onkeydown = e => keys[e.key.toLowerCase()] = true;
+window.onkeyup = e => keys[e.key.toLowerCase()] = false;
+
+// Joystick logikk
+const jArea = document.getElementById('joystickArea');
+const jBase = document.getElementById('joystickBase');
+const jStick = document.getElementById('joystickStick');
+jArea.ontouchstart = e => {
+  const t = e.touches[0];
+  jBase.style.display = jStick.style.display = 'block';
+  jBase.style.left = t.clientX + 'px'; jBase.style.top = t.clientY + 'px';
+  jStick.style.left = t.clientX + 'px'; jStick.style.top = t.clientY + 'px';
+};
+jArea.ontouchmove = e => {
+  const t = e.touches[0];
+  const dx = t.clientX - parseFloat(jBase.style.left);
+  const dy = t.clientY - parseFloat(jBase.style.top);
+  const dist = Math.hypot(dx, dy);
+  const max = 50;
+  const angle = Math.atan2(dy, dx);
+  const moveDist = Math.min(dist, max);
+  jStick.style.left = parseFloat(jBase.style.left) + Math.cos(angle) * moveDist + 'px';
+  jStick.style.top = parseFloat(jBase.style.top) + Math.sin(angle) * moveDist + 'px';
+  joystickVector = { x: (Math.cos(angle) * moveDist)/max, y: (Math.sin(angle) * moveDist)/max };
+};
+jArea.ontouchend = () => {
+  jBase.style.display = jStick.style.display = 'none';
+  joystickVector = { x: 0, y: 0 };
+};
+
+// Skyt-knapp
+const sBtn = document.getElementById('shootBtn');
+sBtn.onpointerdown = () => shootPressed = true;
+sBtn.onpointerup = () => shootPressed = false;
+
+// Våpenbytte
+document.getElementById('leftArrow').onclick = () => { activeSlot = (activeSlot - 1 + inventory.length) % inventory.length; updateToolbar(); };
+document.getElementById('rightArrow').onclick = () => { activeSlot = (activeSlot + 1) % inventory.length; updateToolbar(); };
+document.getElementById('resetBtn').onclick = () => player.hp = 0;
+document.getElementById('restartBtn').onclick = resetGame;
+
+function updateToolbar() {
+  const container = document.getElementById('toolbar');
+  container.innerHTML = '';
+  inventory.forEach((w, i) => {
+    const div = document.createElement('div');
+    div.className = `slot ${i === activeSlot ? 'active' : ''}`;
+    div.innerHTML = `<span>${weaponTypes[w].name}</span>`;
+    container.appendChild(div);
+  });
+}
+
+function spawnBot() {
+  bots.push({
+    x: Math.random() * world.width, y: Math.random() * world.height,
+    r: 15, hp: 50, speed: 2, vx: 0, vy: 0, wanderTimer: 0
+  });
+}
+
+function spawnWeapon() {
+  const types = Object.keys(weaponTypes);
+  const type = types[Math.floor(Math.random() * types.length)];
+  weapons.push({ x: Math.random()*world.width, y: Math.random()*world.height, r: 10, type: weaponTypes[type], typeKey: type });
+}
+
+function shootBullet() {
+  const w = weaponTypes[inventory[activeSlot]];
+  bullets.push({
+    x: player.x, y: player.y,
+    vx: Math.cos(player.aimAngle) * 10, vy: Math.sin(player.aimAngle) * 10,
+    r: w.r, dmg: w.dmg, life: 2000, color: w.color
+  });
+}
+
+function gameOver(win) {
+  gameRunning = false;
+  document.getElementById('gameOver').style.display = 'flex';
+  document.getElementById('gameOverTitle').textContent = win ? "VICTORY ROYALE!" : "GAME OVER";
+}
+
+let spawnTimer = 0, weaponSpawnTimer = 0, shootCooldown = 0, totalBotsSpawned = 0;
+
+// Update og Draw funksjonene dine (integrert og fikset)
 function update(dt) {
   if (!gameRunning) return;
 
   // Bevegelse
   let moveX = joystickVector.x;
   let moveY = joystickVector.y;
+  if (keys['w']) moveY -= 1; if (keys['s']) moveY += 1;
+  if (keys['a']) moveX -= 1; if (keys['d']) moveX += 1;
 
-  if (keys['w'] || keys['arrowup']) moveY -= 1;
-  if (keys['s'] || keys['arrowdown']) moveY += 1;
-  if (keys['a'] || keys['arrowleft']) moveX -= 1;
-  if (keys['d'] || keys['arrowright']) moveX += 1;
-
-  const len = Math.hypot(moveX, moveY) || 1;
-  moveX /= len;
-  moveY /= len;
-
-  const moveSpeed = player.speed * (dt / 16.67);
-  player.vx = moveX * moveSpeed;
-  player.vy = moveY * moveSpeed;
-
-  // Hopp
-  if ((jumpPressed || keys[' ']) && player.onGround) {
-    player.vz = player.jumpStrength;
-    player.onGround = false;
-  }
-  player.vz -= player.gravity * (dt / 16.67);
-  player.z += player.vz * (dt / 16.67);
-  if (player.z <= 0) {
-    player.z = 0;
-    player.vz = 0;
-    player.onGround = true;
+  if (moveX !== 0 || moveY !== 0) {
+    const len = Math.hypot(moveX, moveY);
+    player.vx = (moveX / len) * player.speed;
+    player.vy = (moveY / len) * player.speed;
+    player.aimAngle = Math.atan2(moveY, moveX);
+  } else {
+    player.vx *= 0.8; player.vy *= 0.8;
   }
 
-  // Kollisjon med blokker
-  let newX = player.x + player.vx;
-  let newY = player.y + player.vy;
+  // Kollisjon blokker
+  let nX = player.x + player.vx;
+  let nY = player.y + player.vy;
+  blocks.forEach(b => {
+    if (nX + player.r > b.x && nX - player.r < b.x + b.w && player.y + player.r > b.y && player.y - player.r < b.y + b.h) nX = player.x;
+    if (player.x + player.r > b.x && player.x - player.r < b.x + b.w && nY + player.r > b.y && nY - player.r < b.y + b.h) nY = player.y;
+  });
+  player.x = Math.max(player.r, Math.min(world.width - player.r, nX));
+  player.y = Math.max(player.r, Math.min(world.height - player.r, nY));
 
-  function collidesCircleRect(cx, cy, cr, rect) {
-    const closestX = Math.max(rect.x, Math.min(cx, rect.x + rect.w));
-    const closestY = Math.max(rect.y, Math.min(cy, rect.y + rect.h));
-    const dx = cx - closestX;
-    const dy = cy - closestY;
-    return dx * dx + dy * dy < cr * cr;
-  }
-
-  for (const b of blocks) {
-    if (collidesCircleRect(newX, player.y, player.r, b)) newX = player.x;
-    if (collidesCircleRect(player.x, newY, player.r, b)) newY = player.y;
-  }
-
-  player.x = Math.max(player.r, Math.min(world.width - player.r, newX));
-  player.y = Math.max(player.r, Math.min(world.height - player.r, newY));
-
-  // 🌪️ STORM
+  // Storm logikk
+  if (kills > 2) stormActive = true;
   if (stormActive) {
     stormElapsed += dt;
-    const t = Math.min(1, stormElapsed / stormShrinkTime);
-    const minRadius = 300;
-
-    stormRadius =
-      Math.max(minRadius,
-        Math.min(world.width, world.height) * 0.45 * (1 - t) +
-        minRadius * t
-      );
-
-    stormBarFill.style.width = (100 - t * 100) + "%";
-    stormText.textContent = t < 1 ? "Krymper" : "Full storm";
-
-    const dxs = player.x - stormCenter.x;
-    const dys = player.y - stormCenter.y;
-    const dist = Math.hypot(dxs, dys);
-
-    if (dist > stormRadius) {
-      player.hp -= 8 * (dt / 1000);
-    }
+    let t = Math.min(1, stormElapsed / stormShrinkTime);
+    stormRadius = 2000 * (1 - t) + 200;
+    document.getElementById('stormBarFill').style.width = (100 - t*100) + "%";
+    const dist = Math.hypot(player.x - stormCenter.x, player.y - stormCenter.y);
+    if (dist > stormRadius) player.hp -= 0.1;
   }
 
-  // Bot-spawn (maks 50 totalt)
+  // Spawns
   spawnTimer += dt;
-  if (spawnTimer > 4000 && bots.length < 50 && totalBotsSpawned < MAX_BOTS_TOTAL) {
-    spawnTimer = 0;
-    spawnBot();
-  }
-
-  // Våpen-spawn
+  if (spawnTimer > 3000 && bots.length < 10) { spawnBot(); spawnTimer = 0; }
   weaponSpawnTimer += dt;
-  if (weaponSpawnTimer > 1500 && weapons.length < 30) {
-    weaponSpawnTimer = 0;
-    spawnWeapon();
-  }
+  if (weaponSpawnTimer > 5000) { spawnWeapon(); weaponSpawnTimer = 0; }
 
   // Bots AI
-  for (const bot of bots) {
-    const dx = player.x - bot.x;
-    const dy = player.y - bot.y;
-    const dist = Math.hypot(dx, dy) || 1;
-
-    const speed = bot.speed * (dt / 16.67);
-    let dirX = dx / dist;
-    let dirY = dy / dist;
-
-    // Litt random strafe
-    bot.wanderTimer -= dt;
-    if (bot.wanderTimer <= 0) {
-      bot.wanderTimer = 1000 + Math.random() * 1500;
-      const angle = (Math.random() - 0.5) * 1.2;
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
-      const sx = dirX * cos - dirY * sin;
-      const sy = dirX * sin + dirY * cos;
-      bot.vx = sx * speed;
-      bot.vy = sy * speed;
-    }
-
-    let newBX = bot.x + bot.vx;
-    let newBY = bot.y + bot.vy;
-
-    for (const b of blocks) {
-      if (collidesCircleRect(newBX, bot.y, bot.r, b)) newBX = bot.x;
-      if (collidesCircleRect(bot.x, newBY, bot.r, b)) newBY = bot.y;
-    }
-
-    bot.x = Math.max(bot.r, Math.min(world.width - bot.r, newBX));
-    bot.y = Math.max(bot.r, Math.min(world.height - bot.r, newBY));
-
-    // Skade spiller ved nærkontakt
-    if (dist < bot.r + player.r + 4 && player.z < 10) {
-      player.hp -= 15 * (dt / 1000);
-    }
-  }
+  bots.forEach(bot => {
+    const dx = player.x - bot.x; const dy = player.y - bot.y;
+    const dist = Math.hypot(dx, dy);
+    bot.x += (dx/dist) * bot.speed; bot.y += (dy/dist) * bot.speed;
+    if (dist < player.r + bot.r) player.hp -= 0.5;
+  });
 
   // Bullets
-  for (const b of bullets) {
-    b.x += b.vx * (dt / 16.67);
-    b.y += b.vy * (dt / 16.67);
-    b.life -= dt;
-  }
-  bullets = bullets.filter(b =>
-    b.life > 0 &&
-    b.x > -50 && b.x < world.width + 50 &&
-    b.y > -50 && b.y < world.height + 50
-  );
-
-  // Bullet vs bots
-  for (const b of bullets) {
-    for (const bot of bots) {
-      const dx = b.x - bot.x;
-      const dy = b.y - bot.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < b.r + bot.r) {
-        bot.hp -= b.dmg;
-        b.life = 0;
+  bullets.forEach((b, i) => {
+    b.x += b.vx; b.y += b.vy; b.life -= dt;
+    bots.forEach((bot, bi) => {
+      if (Math.hypot(b.x - bot.x, b.y - bot.y) < bot.r + b.r) {
+        bot.hp -= b.dmg; b.life = 0;
+        if (bot.hp <= 0) {
+          bots.splice(bi, 1); kills++;
+          document.getElementById('killText').textContent = kills;
+          if(kills > hiScore) { hiScore = kills; localStorage.setItem("mw_hiscore", hiScore); document.getElementById('hiScoreText').textContent = hiScore; }
+        }
       }
-    }
-  }
+    });
+  });
+  bullets = bullets.filter(b => b.life > 0);
 
-  // Kill‑teller + hi‑score
-  for (const bot of bots) {
-    if (bot.hp <= 0) {
-      kills++;
-      killText.textContent = kills;
-      if (kills > hiScore) {
-        hiScore = kills;
-        hiScoreText.textContent = hiScore;
-        localStorage.setItem("mw_hiscore", hiScore);
-      }
-    }
-  }
-  bots = bots.filter(bot => bot.hp > 0);
-
-  // Plukk opp våpen
-  for (let i = weapons.length - 1; i >= 0; i--) {
-    const w = weapons[i];
-    const dist = Math.hypot(player.x - w.x, player.y - w.y);
-    if (dist < player.r + w.r + 6) {
-      addWeaponToInventory(w.type);
+  // Våpen opplukking
+  weapons.forEach((w, i) => {
+    if (Math.hypot(player.x - w.x, player.y - w.y) < player.r + w.r) {
+      if (!inventory.includes(w.typeKey)) { inventory.push(w.typeKey); updateToolbar(); }
       weapons.splice(i, 1);
     }
-  }
+  });
 
   // Skyting
   shootCooldown -= dt;
-  if (shootCooldown < 0) shootCooldown = 0;
-  if (shootPressed || keys['mouse1']) {
-    const w = getActiveWeapon();
-    if (w && shootCooldown === 0) {
-      shootBullet();
-      shootCooldown = w.fireRate || 250;
-    }
+  if (shootPressed && shootCooldown <= 0) {
+    shootBullet();
+    shootCooldown = weaponTypes[inventory[activeSlot]].fireRate;
   }
 
-  // UI
-  hpText.textContent = Math.max(0, player.hp).toFixed(0);
-  botsText.textContent = bots.length;
-  updateWeaponText();
-
-  if (player.hp <= 0) {
-    player.hp = 0;
-    gameOver(false);
-  }
-
-  // Victory Royale
-  if (bots.length === 0 && totalBotsSpawned >= MAX_BOTS_TOTAL && gameRunning) {
-    gameOver(true);
-  }
+  document.getElementById('hpText').textContent = Math.ceil(player.hp);
+  if (player.hp <= 0) gameOver(false);
 }
 
-  function draw() {
-  ctx.clearRect(0, 0, W(), H());
-
-  // Kamera
-  const camX = player.x - W() / 2;
-  const camY = player.y - H() / 2;
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const camX = player.x - canvas.width/2;
+  const camY = player.y - canvas.height/2;
 
   ctx.save();
   ctx.translate(-camX, -camY);
 
-  // Bakgrunn
-  ctx.fillStyle = "#10151c";
-  ctx.fillRect(0, 0, world.width, world.height);
+  // Verdensgrense
+  ctx.strokeStyle = "#444";
+  ctx.strokeRect(0, 0, world.width, world.height);
 
-  // Storm
-  if (stormActive) {
-    ctx.save();
-    ctx.fillStyle = "rgba(120, 180, 255, 0.08)";
-    ctx.beginPath();
-    ctx.arc(stormCenter.x, stormCenter.y, stormRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
+  // Storm sirkel
+  ctx.beginPath();
+  ctx.arc(stormCenter.x, stormCenter.y, stormRadius, 0, Math.PI*2);
+  ctx.strokeStyle = "rgba(100, 200, 255, 0.5)";
+  ctx.lineWidth = 5;
+  ctx.stroke();
 
-  // Blokker
-  ctx.fillStyle = "#1f2933";
-  for (const b of blocks) {
-    ctx.fillRect(b.x, b.y, b.w, b.h);
-    ctx.strokeStyle = "#2f3b4a";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(b.x, b.y, b.w, b.h);
-  }
-
-  // Våpen på bakken
-  for (const w of weapons) {
-    ctx.fillStyle = w.type.color;
-    ctx.beginPath();
-    ctx.arc(w.x, w.y, w.r, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#000";
-    ctx.font = "10px system-ui";
-    ctx.textAlign = "center";
-    ctx.fillText(w.type.name[0], w.x, w.y + 3);
-  }
-
-  // Bots
-  for (const bot of bots) {
-    ctx.save();
-    ctx.translate(bot.x, bot.y);
-    ctx.fillStyle = "#f55";
-    ctx.beginPath();
-    ctx.arc(0, 0, bot.r, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#000";
-    ctx.font = "10px system-ui";
-    ctx.textAlign = "center";
-    ctx.fillText("BOT", 0, 3);
-    ctx.restore();
-  }
-
-  // Bullets
-  for (const b of bullets) {
-    ctx.fillStyle = b.color || "#fffb";
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  blocks.forEach(b => { ctx.fillStyle = "#334"; ctx.fillRect(b.x, b.y, b.w, b.h); });
+  weapons.forEach(w => { ctx.fillStyle = w.type.color; ctx.beginPath(); ctx.arc(w.x, w.y, w.r, 0, Math.PI*2); ctx.fill(); });
+  bots.forEach(bot => { ctx.fillStyle = "#f44"; ctx.beginPath(); ctx.arc(bot.x, bot.y, bot.r, 0, Math.PI*2); ctx.fill(); });
+  bullets.forEach(b => { ctx.fillStyle = b.color; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill(); });
 
   // Spiller
   ctx.save();
-  ctx.translate(player.x, player.y - player.z);
+  ctx.translate(player.x, player.y);
   ctx.rotate(player.aimAngle);
-
   ctx.fillStyle = "#4cf";
-  ctx.beginPath();
-  ctx.arc(0, 0, player.r, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Våpen‑pipa
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(player.r - 4, -3, 12, 6);
-
+  ctx.beginPath(); ctx.arc(0, 0, player.r, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = "#fff"; ctx.fillRect(10, -3, 15, 6); // Våpenløp
   ctx.restore();
+
   ctx.restore();
 }
 
-  function loop(timestamp) {
-  if (!lastTime) lastTime = timestamp;
+function loop(timestamp) {
   const dt = timestamp - lastTime;
   lastTime = timestamp;
-
-  update(dt);
+  update(dt || 16);
   draw();
   requestAnimationFrame(loop);
 }
 
-// Start spillet
 resetGame();
 requestAnimationFrame(loop);
-
-
 </script>
 </body>
 </html>
