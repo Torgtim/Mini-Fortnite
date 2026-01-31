@@ -1,6 +1,42 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
+  <head>
+  <style>
+    /* … alt det du allerede har … */
+
+    .arrowBtn {
+      position: absolute;
+      bottom: 25px;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      background: #0008;
+      border: 2px solid #888;
+      color: #fff;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      user-select: none;
+    }
+
+    #leftArrow {
+      left: calc(50% - 150px);
+    }
+
+    #rightArrow {
+      right: calc(50% - 150px);
+    }
+
+    .arrowBtn:active {
+      background: #222;
+      border-color: #fff;
+    }
+  </style>
+</head>
+
 <meta charset="UTF-8" />
 <title>Mini Fortnite Lite</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
