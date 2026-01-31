@@ -1,42 +1,6 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
-  <head>
-  <style>
-    /* … alt det du allerede har … */
-
-    .arrowBtn {
-      position: absolute;
-      bottom: 25px;
-      width: 45px;
-      height: 45px;
-      border-radius: 50%;
-      background: #0008;
-      border: 2px solid #888;
-      color: #fff;
-      font-size: 22px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      pointer-events: auto;
-      user-select: none;
-    }
-
-    #leftArrow {
-      left: calc(50% - 150px);
-    }
-
-    #rightArrow {
-      right: calc(50% - 150px);
-    }
-
-    .arrowBtn:active {
-      background: #222;
-      border-color: #fff;
-    }
-  </style>
-</head>
-
 <meta charset="UTF-8" />
 <title>Mini Fortnite Lite</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
@@ -96,11 +60,6 @@
     display: flex;
     gap: 6px;
     pointer-events: auto;
-    <div id="toolbar"></div>
-
-<div id="leftArrow" class="arrowBtn">◀</div>
-<div id="rightArrow" class="arrowBtn">▶</div>
-
   }
   .slot {
     width: 52px;
@@ -128,6 +87,37 @@
     bottom: 2px;
     font-size: 9px;
     opacity: 0.7;
+  }
+
+  /* Piler for å bytte våpen */
+  .arrowBtn {
+    position: absolute;
+    bottom: 25px;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: #0008;
+    border: 2px solid #888;
+    color: #fff;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    user-select: none;
+  }
+
+  #leftArrow {
+    left: calc(50% - 150px);
+  }
+
+  #rightArrow {
+    right: calc(50% - 150px);
+  }
+
+  .arrowBtn:active {
+    background: #222;
+    border-color: #fff;
   }
 
   /* Virtuell joystick (venstre) */
@@ -227,6 +217,8 @@
   </div>
 
   <div id="toolbar"></div>
+  <div id="leftArrow" class="arrowBtn">◀</div>
+  <div id="rightArrow" class="arrowBtn">▶</div>
 
   <div id="joystickArea">
     <div id="joystickBase"></div>
@@ -274,6 +266,9 @@
   const jumpBtn = document.getElementById('jumpBtn');
   const toolbarEl = document.getElementById('toolbar');
 
+  const leftArrow = document.getElementById('leftArrow');
+  const rightArrow = document.getElementById('rightArrow');
+
   const W = () => canvas.width;
   const H = () => canvas.height;
 
@@ -320,19 +315,6 @@
   // Kills / hi-score
   let kills = 0;
   let hiScore = 0;
-
- document.getElementById("leftArrow").addEventListener("click", () => {
-  player.activeSlot = (player.activeSlot + 4) % 5; // går bakover
-  updateToolbar();
-  updateWeaponText();
-});
-
-document.getElementById("rightArrow").addEventListener("click", () => {
-  player.activeSlot = (player.activeSlot + 1) % 5; // går fremover
-  updateToolbar();
-  updateWeaponText();
-});
-
 
   const weaponTypes = [
     { name: "Rifle", dmg: 20, color: "#4cf", fireRate: 220, bulletSpeed: 7 },
@@ -432,23 +414,44 @@ document.getElementById("rightArrow").addEventListener("click", () => {
     }
   }
 
+  function circleIntersectsRect(cx, cy, cr, rect) {
+    const closestX = Math.max(rect.x, Math.min(cx, rect.x + rect.w));
+    const closestY = Math.max(rect.y, Math.min(cy, rect.y + rect.h));
+    const dx = cx - closestX;
+    const dy = cy - closestY;
+    return dx * dx + dy * dy < cr * cr;
+  }
+
+  function positionInsideBlocks(x, y, r) {
+    for (const b of blocks) {
+      if (circleIntersectsRect(x, y, r, b)) return true;
+    }
+    return false;
+  }
+
+  function safeRandomPosition(r, margin = 100) {
+    let tries = 0;
+    while (tries < 200) {
+      const x = margin + Math.random() * (world.width - margin * 2);
+      const y = margin + Math.random() * (world.height - margin * 2);
+      if (!positionInsideBlocks(x, y, r)) return { x, y };
+      tries++;
+    }
+    return { x: world.width / 2, y: world.height / 2 };
+  }
+
   function initBots() {
     bots = [];
     for (let i = 0; i < 15; i++) spawnBot();
   }
 
   function spawnBot() {
-    const margin = 100;
-    const edge = Math.floor(Math.random() * 4);
-    let x, y;
-    if (edge === 0) { x = margin; y = Math.random() * world.height; }
-    else if (edge === 1) { x = world.width - margin; y = Math.random() * world.height; }
-    else if (edge === 2) { x = Math.random() * world.width; y = margin; }
-    else { x = Math.random() * world.width; y = world.height - margin; }
-
+    const r = 14;
+    const pos = safeRandomPosition(r, 120);
     bots.push({
-      x, y,
-      r: 14,
+      x: pos.x,
+      y: pos.y,
+      r,
       speed: 1.6 + Math.random() * 0.5,
       hp: 60,
       wanderTimer: 0,
@@ -458,13 +461,13 @@ document.getElementById("rightArrow").addEventListener("click", () => {
   }
 
   function spawnWeapon() {
+    const r = 12;
+    const pos = safeRandomPosition(r, 150);
     const type = weaponTypes[Math.floor(Math.random() * weaponTypes.length)];
-    const margin = 150;
-    const x = margin + Math.random() * (world.width - margin * 2);
-    const y = margin + Math.random() * (world.height - margin * 2);
     weapons.push({
-      x, y,
-      r: 12,
+      x: pos.x,
+      y: pos.y,
+      r,
       type
     });
   }
@@ -479,7 +482,6 @@ document.getElementById("rightArrow").addEventListener("click", () => {
         return;
       }
     }
-    // Hvis fullt: bytt ut aktiv slot
     player.weaponSlots[player.activeSlot] = type;
     updateToolbar();
     updateWeaponText();
@@ -554,6 +556,19 @@ document.getElementById("rightArrow").addEventListener("click", () => {
   jumpBtn.addEventListener('mouseup', e => {
     e.preventDefault();
     jumpPressed = false;
+  });
+
+  // Piler for å bytte våpen
+  leftArrow.addEventListener("click", () => {
+    player.activeSlot = (player.activeSlot + 4) % 5;
+    updateToolbar();
+    updateWeaponText();
+  });
+
+  rightArrow.addEventListener("click", () => {
+    player.activeSlot = (player.activeSlot + 1) % 5;
+    updateToolbar();
+    updateWeaponText();
   });
 
   // Joystick
