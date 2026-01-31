@@ -787,6 +787,19 @@ function update(dt) {
       player.hp -= 8 * (dt / 1000);
     }
   }
+  // Bots tar stormskade KUN når stormen er full
+if (stormElapsed >= stormShrinkTime) {
+  for (const bot of bots) {
+    const bdx = bot.x - stormCenter.x;
+    const bdy = bot.y - stormCenter.y;
+    const bdist = Math.hypot(bdx, bdy);
+
+    if (bdist > stormRadius) {
+      bot.hp -= 5 * (dt / 1000); // 5 damage per sekund
+    }
+  }
+}
+
 
   // Bot-spawn (maks 50 totalt)
   spawnTimer += dt;
